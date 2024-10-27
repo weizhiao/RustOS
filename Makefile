@@ -9,13 +9,16 @@ DISASM_TMP := target/$(TARGET)/$(MODE)/asm
 BOARD ?= qemu
 SBI ?= rustsbi
 BOOTLOADER := bootloader/$(SBI)-$(BOARD).bin
-K210_BOOTLOADER_SIZE := 131072
 
 # KERNEL ENTRY
 ifeq ($(BOARD), qemu)
 	KERNEL_ENTRY_PA := 0x80200000
 endif
 
+# Building mode argument
+ifeq ($(MODE), release)
+	MODE_ARG := --release
+endif
 
 # Binutils
 OBJDUMP := rust-objdump --arch-name=riscv64
@@ -33,7 +36,7 @@ $(KERNEL_BIN): kernel
 kernel:
 	@echo Platform: $(BOARD)
 	@cp script/linker-$(BOARD).ld script/linker.ld
-	@cargo rustc --release -p kernel -- -Clink-arg=-Tscript/linker.ld
+	@cargo rustc $(MODE_ARG) -p kernel -- -Clink-arg=-Tscript/linker.ld
 	@rm script/linker.ld
 
 clean:
@@ -55,6 +58,7 @@ run-inner: build
 ifeq ($(BOARD),qemu)
 	@qemu-system-riscv64 \
 		-machine virt \
+		-m 128M \
 		-nographic \
 		-bios $(BOOTLOADER) \
 		-device loader,file=$(KERNEL_BIN),addr=$(KERNEL_ENTRY_PA)

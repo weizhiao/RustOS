@@ -1,14 +1,13 @@
 use core::fmt::{self, Write};
-use sbi_rt::{console_write, Physical};
+use sbi_rt::legacy::console_putchar;
 
 struct Stdout;
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        let start = s.as_ptr() as usize;
-        let end = start + s.len();
-        let bytes = Physical::new(s.len(), start, end);
-        console_write(bytes);
+        for c in s.chars() {
+            console_putchar(c as _);
+        }
         Ok(())
     }
 }

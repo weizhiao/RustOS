@@ -1,10 +1,19 @@
 #![no_std]
 #![no_main]
+#![feature(alloc_error_handler)]
+#![feature(const_trait_impl)]
+
+extern crate alloc;
 
 #[macro_use]
 mod console;
+mod config;
+mod hal;
+mod kvm;
 mod lang;
 mod logging;
+mod mm;
+mod sync;
 mod syscall;
 
 use core::arch::global_asm;
@@ -17,7 +26,10 @@ pub fn clear_bss() {
         fn sbss();
         fn ebss();
     }
-    (sbss as usize..ebss as usize).for_each(|a| unsafe { (a as *mut u8).write_volatile(0) });
+    unsafe {
+        core::slice::from_raw_parts_mut(sbss as usize as *mut u8, ebss as usize - sbss as usize)
+            .fill(0);
+    }
 }
 
 global_asm!(include_str!("entry.asm"));
@@ -25,6 +37,8 @@ global_asm!(include_str!("entry.asm"));
 #[no_mangle]
 fn rust_main() -> ! {
     clear_bss();
+    mm::init();
+    kvm::init();
     logging::init();
     println!("[kernel] Hello, world!");
     system_reset(Shutdown, NoReason);
