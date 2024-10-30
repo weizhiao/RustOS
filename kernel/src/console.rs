@@ -1,7 +1,10 @@
 use core::fmt::{self, Write};
 use sbi_rt::legacy::console_putchar;
+use spin::Mutex;
 
 struct Stdout;
+
+static STDOUT: Mutex<Stdout> = Mutex::new(Stdout);
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -13,7 +16,7 @@ impl Write for Stdout {
 }
 
 pub fn print(args: fmt::Arguments) {
-    Stdout.write_fmt(args).unwrap();
+    STDOUT.lock().write_fmt(args).unwrap();
 }
 
 #[macro_export]

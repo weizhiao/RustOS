@@ -2,7 +2,7 @@ use crate::{config::MEMORY_END, sync::UPIntrFreeCell};
 use alloc::vec::Vec;
 use pagetable::{AllocPageFrame, FrameTracker, PhysAddr, PhysPageNum};
 
-trait FrameAllocator {
+pub trait FrameAllocator {
     fn alloc(&mut self) -> Option<PhysPageNum>;
     fn alloc_more(&mut self, pages: usize) -> Option<Vec<PhysPageNum>>;
     fn dealloc(&mut self, ppn: PhysPageNum);
@@ -32,12 +32,12 @@ impl StackFrameAllocator {
 impl FrameAllocator for StackFrameAllocator {
     fn alloc(&mut self) -> Option<PhysPageNum> {
         if let Some(ppn) = self.recycled.pop() {
-            Some(ppn.into())
+            Some(PhysPageNum(ppn))
         } else if self.current == self.end {
             None
         } else {
             self.current += 1;
-            Some((self.current - 1).into())
+            Some(PhysPageNum(self.current - 1))
         }
     }
     fn alloc_more(&mut self, pages: usize) -> Option<Vec<PhysPageNum>> {
@@ -46,7 +46,7 @@ impl FrameAllocator for StackFrameAllocator {
         } else {
             self.current += pages;
             let arr: Vec<usize> = (1..pages + 1).collect();
-            let v = arr.iter().map(|x| (self.current - x).into()).collect();
+            let v = arr.iter().map(|x| PhysPageNum(self.current - x)).collect();
             Some(v)
         }
     }
