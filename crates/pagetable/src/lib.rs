@@ -1,13 +1,14 @@
 #![no_std]
 extern crate alloc;
 mod address;
+mod rv39;
 
-use address::PAGE_SIZE;
 pub use address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
 use core::fmt::{self, Debug, Formatter};
+use rv39::{PAGE_SIZE, PAGE_TABLE_LEVEL, PTE_ENTRY_NUM};
 
 pub struct FrameTracker {
     pub ppn: PhysPageNum,
@@ -59,9 +60,14 @@ impl PageTableEntry {
     pub fn empty() -> Self {
         PageTableEntry { bits: 0 }
     }
-
+    pub fn get_pte_array(&self) -> Option<&mut [PageTableEntry]> {
+        if self.is_valid() && !self.readable() && !self.writable() && !self.executable() {
+            return Some(self.ppn().get_pte_array());
+        }
+        None
+    }
     pub fn ppn(&self) -> PhysPageNum {
-        (self.bits >> 10 & ((1usize << 44) - 1)).into()
+        PhysPageNum(self.bits >> 10 & ((1usize << 44) - 1))
     }
     pub fn flags(&self) -> PTEFlags {
         PTEFlags::from_bits(self.bits as u8).unwrap()
@@ -85,10 +91,52 @@ pub trait AllocPageFrame {
     fn page_frame_dealloc(&self, frame: FrameTracker);
 }
 
-pub struct PageTable<T: AllocPageFrame> {
-    allocator: T,
+pub struct PageTable<A: AllocPageFrame> {
+    allocator: A,
     root_ppn: PhysPageNum,
     frames: Vec<FrameTracker>,
+}
+
+impl<A: AllocPageFrame> Debug for PageTable<A> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        const FORMAT_STR: [&'static str; 4] = ["   ", "  ", " ", ""];
+        fn walk(
+            pte: &PageTableEntry,
+            va: VirtPageNum,
+            level: u32,
+            f: &mut Formatter<'_>,
+        ) -> fmt::Result {
+            if pte.is_valid() {
+                let start_va: VirtAddr = va.into();
+                let end_va: VirtAddr = va.nth(PTE_ENTRY_NUM.pow(level)).into();
+                if let Some(pte_array) = pte.get_pte_array() {
+                    writeln!(
+                        f,
+                        "{}{:?}-{:?}",
+                        FORMAT_STR[level as usize], start_va, end_va
+                    )?;
+                    let mut cur_va = va;
+                    for cur_pte in pte_array {
+                        walk(cur_pte, cur_va, level - 1, f)?;
+                        cur_va = cur_va.nth(PTE_ENTRY_NUM.pow(level - 1));
+                    }
+                } else {
+                    writeln!(
+                        f,
+                        "{}{:?}<->{:?} {:?}",
+                        FORMAT_STR[level as usize],
+                        VirtAddr::from(va),
+                        PhysAddr::from(pte.ppn()),
+                        pte.flags()
+                    )?;
+                }
+            }
+            Ok(())
+        }
+        let root = PageTableEntry::new(self.root_ppn, PTEFlags::V);
+        walk(&root, VirtPageNum(0), PAGE_TABLE_LEVEL, f)?;
+        Ok(())
+    }
 }
 
 pub trait PageMap {
@@ -98,17 +146,17 @@ pub trait PageMap {
     fn map(&mut self, mut vpn: VirtPageNum, mut ppn: PhysPageNum, size: usize, flags: PTEFlags) {
         let count = (size + PAGE_SIZE - 1) / PAGE_SIZE;
         for _ in 0..count {
-            vpn = (vpn.0 + 1).into();
-            ppn = (ppn.0 + 1).into();
             self.map_one(vpn, ppn, flags);
+            vpn = vpn.nth(1);
+            ppn = ppn.nth(1);
         }
     }
 
     fn unmap(&mut self, mut vpn: VirtPageNum, size: usize) {
         let count = (size + PAGE_SIZE - 1) / PAGE_SIZE;
         for _ in 0..count {
-            vpn = (vpn.0 + 1).into();
             self.unmap_one(vpn);
+            vpn = vpn.nth(1);
         }
     }
 }
@@ -127,7 +175,7 @@ impl<T: AllocPageFrame> PageTable<T> {
     pub fn from_token(satp: usize, allocator: T) -> Self {
         Self {
             allocator,
-            root_ppn: PhysPageNum::from(satp & ((1usize << 44) - 1)),
+            root_ppn: PhysPageNum(satp & ((1usize << 44) - 1)),
             frames: Vec::new(),
         }
     }

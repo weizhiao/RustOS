@@ -38,8 +38,8 @@ global_asm!(include_str!("entry.asm"));
 fn rust_main() -> ! {
     clear_bss();
     mm::init();
-    kvm::init();
     logging::init();
+    kvm::init();
     println!("[kernel] Hello, world!");
     system_reset(Shutdown, NoReason);
     unreachable!()

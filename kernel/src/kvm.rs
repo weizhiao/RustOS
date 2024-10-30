@@ -1,7 +1,6 @@
 use core::arch::asm;
 
 use crate::{config::MEMORY_END, mm::PageAllocator};
-use alloc::vec::Vec;
 use pagetable::{PTEFlags, PageMap, PageTable, PhysAddr, VirtAddr};
 use riscv::register::satp;
 use spin::lazy::Lazy;
@@ -13,7 +12,7 @@ extern "C" {
     fn erodata();
     fn sdata();
     fn edata();
-    fn sbss();
+    fn sbss_with_stack();
     fn ebss();
     fn ekernel();
 }
@@ -48,8 +47,7 @@ fn kvminit() -> PageTable<PageAllocator> {
         edata as usize - sdata_va.0,
         PTEFlags::R | PTEFlags::W,
     );
-
-    let sbss_va = VirtAddr::from(sbss as usize);
+    let sbss_va = VirtAddr::from(sbss_with_stack as usize);
     let sbss_pa = PhysAddr::from(sbss_va.0);
     page_table.map(
         sbss_va.into(),
@@ -66,6 +64,7 @@ fn kvminit() -> PageTable<PageAllocator> {
         MEMORY_END - ekernel_va.0,
         PTEFlags::W | PTEFlags::R,
     );
+    log::info!("kernel pagetable init");
     //println!("{:?}", page_table);
     page_table
 }

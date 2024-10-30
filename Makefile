@@ -1,6 +1,7 @@
 # Building
 TARGET := riscv64gc-unknown-none-elf
 MODE := release
+LOG :=INFO
 KERNEL_ELF := target/$(TARGET)/$(MODE)/kernel
 KERNEL_BIN := $(KERNEL_ELF).bin
 DISASM_TMP := target/$(TARGET)/$(MODE)/asm
@@ -36,7 +37,7 @@ $(KERNEL_BIN): kernel
 kernel:
 	@echo Platform: $(BOARD)
 	@cp script/linker-$(BOARD).ld script/linker.ld
-	@cargo rustc $(MODE_ARG) -p kernel -- -Clink-arg=-Tscript/linker.ld
+	@LOG=$(LOG) cargo rustc $(MODE_ARG) -p kernel -- -Clink-arg=-Tscript/linker.ld
 	@rm script/linker.ld
 
 clean:
