@@ -8,7 +8,8 @@ use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
 use core::fmt::{self, Debug, Formatter};
-use rv39::{PAGE_SIZE, PAGE_TABLE_LEVEL, PTE_ENTRY_NUM};
+pub use rv39::PAGE_SIZE;
+use rv39::{PAGE_TABLE_LEVEL, PTE_ENTRY_NUM};
 
 pub struct FrameTracker {
     pub ppn: PhysPageNum,

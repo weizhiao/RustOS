@@ -1,0 +1,10 @@
+[package]
+name = "board"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chardev = { path = "../drivers/chardev" }
+plic = { path = "../drivers/plic" }
+riscv = { workspace = true }
+spin = { workspace = true }

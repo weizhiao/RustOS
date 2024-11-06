@@ -5,10 +5,12 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
+dtb-walker = "=0.2.0-alpha.3"
 sbi-rt = { version = "0.0.3", features = ["legacy"] }
-riscv = "0.12.1"
+riscv = { workspace = true }
 buddy_system_allocator = "0.11.0"
 pagetable = { path = "../crates/pagetable" }
-chardev = { path = "../drivers/chardev" }
-plic = { path = "../drivers/plic" }
+trap = { path = "../crates/trap" }
+trap_macro = { path = "../crates/trap-macro" }
+board = { path = "../boards" }
 spin = { workspace = true }

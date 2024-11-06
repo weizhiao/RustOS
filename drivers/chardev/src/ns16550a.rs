@@ -81,7 +81,7 @@ impl NS16550aInner {
         unsafe { &mut *(self.base_addr as *mut WriteWithoutDLAB) }
     }
 
-    fn new(base_addr: usize) -> Self {
+    const fn new(base_addr: usize) -> Self {
         Self { base_addr }
     }
 
@@ -117,18 +117,18 @@ impl NS16550aInner {
     }
 }
 
-pub struct NS16550a<const BASE_ADDR: usize> {
+pub struct NS16550a {
     inner: NS16550aInner,
 }
 
-impl<const BASE_ADDR: usize> NS16550a<BASE_ADDR> {
-    pub fn new() -> Self {
-        let inner = NS16550aInner::new(BASE_ADDR);
+impl NS16550a {
+    pub const fn new(base_addr: usize) -> Self {
+        let inner = NS16550aInner::new(base_addr);
         Self { inner }
     }
 }
 
-impl<const BASE_ADDR: usize> CharDevice for NS16550a<BASE_ADDR> {
+impl CharDevice for NS16550a {
     fn init(&self) {
         self.inner.init();
     }
@@ -140,5 +140,4 @@ impl<const BASE_ADDR: usize> CharDevice for NS16550a<BASE_ADDR> {
     fn write(&self, ch: u8) {
         self.inner.write(ch);
     }
-    fn handle_irq(&self) {}
 }

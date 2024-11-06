@@ -1,5 +1,5 @@
+use board::{CharDevice, UART};
 use core::fmt::{self, Write};
-use sbi_rt::legacy::console_putchar;
 use spin::Mutex;
 
 struct Stdout;
@@ -8,8 +8,9 @@ static STDOUT: Mutex<Stdout> = Mutex::new(Stdout);
 
 impl Write for Stdout {
     fn write_str(&mut self, s: &str) -> fmt::Result {
+        let uart = UART.lock();
         for c in s.chars() {
-            console_putchar(c as _);
+            uart.write(c as u8);
         }
         Ok(())
     }

@@ -1,0 +1,11 @@
+[package]
+name = "trap_macro"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = { version = "1.0.37", default-features = false }
+syn = { version = "2.0", features = ["full"] }

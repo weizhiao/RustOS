@@ -63,7 +63,7 @@ impl PLIC {
         unsafe { self.intr_priority_ptr(intr_id).read_volatile() }
     }
     /// The enablement of interrupt source of each context.
-    pub fn set_intr_enable(
+    pub fn context_intr_enable(
         &mut self,
         hart_id: usize,
         target_priority: TargetPriority,
@@ -75,7 +75,7 @@ impl PLIC {
         }
     }
     /// The enablement of interrupt source of each context.
-    pub fn set_intr_disable(
+    pub fn context_intr_disable(
         &mut self,
         hart_id: usize,
         target_priority: TargetPriority,
@@ -87,7 +87,7 @@ impl PLIC {
         }
     }
     /// The interrupt priority threshold of each context.
-    pub fn set_target_threshold(
+    pub fn set_context_threshold(
         &mut self,
         hart_id: usize,
         target_priority: TargetPriority,
@@ -99,7 +99,11 @@ impl PLIC {
         }
     }
     /// The interrupt priority threshold of each context.
-    pub fn get_target_threshold(&mut self, hart_id: usize, target_priority: TargetPriority) -> u32 {
+    pub fn get_context_threshold(
+        &mut self,
+        hart_id: usize,
+        target_priority: TargetPriority,
+    ) -> u32 {
         let threshold_ptr = self.priority_threshold_ptr(hart_id, target_priority);
         unsafe { threshold_ptr.read_volatile() }
     }

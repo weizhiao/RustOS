@@ -37,7 +37,7 @@ $(KERNEL_BIN): kernel
 kernel:
 	@echo Platform: $(BOARD)
 	@cp script/linker-$(BOARD).ld script/linker.ld
-	@LOG=$(LOG) cargo rustc $(MODE_ARG) -p kernel -- -Clink-arg=-Tscript/linker.ld
+	@LOG=$(LOG) cargo rustc $(MODE_ARG) -p kernel --target=riscv64gc-unknown-none-elf -- -Clink-arg=-Tscript/linker.ld
 	@rm script/linker.ld
 
 clean:

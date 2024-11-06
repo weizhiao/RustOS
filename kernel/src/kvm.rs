@@ -1,6 +1,7 @@
 use core::arch::asm;
 
 use crate::{config::MEMORY_END, mm::PageAllocator};
+use board::MMIO;
 use pagetable::{PTEFlags, PageMap, PageTable, PhysAddr, VirtAddr};
 use riscv::register::satp;
 use spin::lazy::Lazy;
@@ -64,6 +65,11 @@ fn kvminit() -> PageTable<PageAllocator> {
         MEMORY_END - ekernel_va.0,
         PTEFlags::W | PTEFlags::R,
     );
+    for (addr, size) in MMIO {
+        let va = VirtAddr::from(*addr);
+        let pa = PhysAddr::from(*addr);
+        page_table.map(va.into(), pa.into(), *size, PTEFlags::R | PTEFlags::W);
+    }
     log::info!("kernel pagetable init");
     //println!("{:?}", page_table);
     page_table
